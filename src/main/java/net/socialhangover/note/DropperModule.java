@@ -60,10 +60,8 @@ public class DropperModule implements TerminableModule {
         Events.subscribe(ItemSpawnEvent.class)
                 .filter(EventFilters.ignoreCancelled())
                 .handler(e -> {
-                    Block block = e.getEntity().getLocation().getBlock();
-                    if (delete.contains(block)) {
+                    if (delete.remove(e.getEntity().getLocation().getBlock())) {
                         e.setCancelled(true);
-                        delete.remove(block);
                     }
                 }).bindWith(consumer);
     }
