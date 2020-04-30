@@ -38,7 +38,8 @@ public class NotePlugin extends ExtendedJavaPlugin {
                     NoteBlock noteBlock = (NoteBlock) block.getBlockData();
                     Note note = noteBlock.getNote();
                     Location loc = block.getLocation().clone().add(0.5D, 1.0D, 0.5D);
-                    ArmorStand as = this.spawn(loc, note.getId() + " " + note.getTone().name() + (note.isSharped() ? "#" : ""));
+                    ArmorStand as = this.spawn(loc, note.getId() + " " + note.getTone()
+                            .name() + (note.isSharped() ? "#" : ""));
                     this.armorStands.add(as);
                 }, 1L))
                 .bindWith(this);
@@ -53,6 +54,8 @@ public class NotePlugin extends ExtendedJavaPlugin {
                 }
             }
         }, 1L, TimeUnit.MINUTES, 1L, TimeUnit.MINUTES).bindWith(this);
+
+        bindModule(new DropperModule());
     }
 
     protected void disable() {
