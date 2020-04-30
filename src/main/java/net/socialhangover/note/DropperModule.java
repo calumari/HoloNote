@@ -2,18 +2,15 @@ package net.socialhangover.note;
 
 import com.google.common.collect.ImmutableList;
 import me.lucko.helper.Events;
-import me.lucko.helper.Schedulers;
 import me.lucko.helper.event.filter.EventFilters;
 import me.lucko.helper.terminable.TerminableConsumer;
 import me.lucko.helper.terminable.module.TerminableModule;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
-import org.bukkit.block.Container;
 import org.bukkit.block.Jukebox;
 import org.bukkit.block.data.type.Dispenser;
 import org.bukkit.event.block.BlockDispenseEvent;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.inventory.Inventory;
+import org.bukkit.event.entity.ItemSpawnEvent;
 
 import javax.annotation.Nonnull;
 import java.util.HashSet;
@@ -36,7 +33,7 @@ public class DropperModule implements TerminableModule {
             .add(Material.MUSIC_DISC_WAIT)
             .add(Material.MUSIC_DISC_WARD)
             .build();
-    private static final Set<Inventory> preventInteract = new HashSet<>();
+    private static final Set<Block> delete = new HashSet<>();
 
     @Override
     public void setup(@Nonnull TerminableConsumer consumer) {
@@ -50,26 +47,24 @@ public class DropperModule implements TerminableModule {
                     Block relative = block.getRelative(dispenser.getFacing());
 
                     if (relative.getType() == Material.JUKEBOX) {
-                        e.setCancelled(true);
-
                         Jukebox state = (Jukebox) relative.getState();
                         state.eject();
                         state.setPlaying(e.getItem().getType());
                         state.update();
 
-                        Inventory inv = ((Container) block.getState()).getInventory();
-                        preventInteract.add(inv); // possible dupe?
-
-                        Schedulers.sync().runLater(() -> {
-                            inv.removeItemAnySlot(e.getItem());
-                            preventInteract.remove(inv);
-                        }, 1);
+                        delete.add(relative); // possible dupe?
                     }
                 }).bindWith(consumer);
 
-        Events.subscribe(InventoryClickEvent.class)
-                .filter(e -> preventInteract.contains(e.getClickedInventory()))
-                .handler(e -> e.setCancelled(true))
-                .bindWith(consumer);
+
+        Events.subscribe(ItemSpawnEvent.class)
+                .filter(EventFilters.ignoreCancelled())
+                .handler(e -> {
+                    Block block = e.getEntity().getLocation().getBlock();
+                    if (delete.contains(block)) {
+                        e.setCancelled(true);
+                        delete.remove(block);
+                    }
+                }).bindWith(consumer);
     }
 }
