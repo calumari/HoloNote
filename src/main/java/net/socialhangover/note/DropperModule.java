@@ -18,6 +18,7 @@ import org.bukkit.inventory.BlockInventoryHolder;
 import org.bukkit.inventory.ItemStack;
 
 import javax.annotation.Nonnull;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -66,11 +67,14 @@ public class DropperModule implements TerminableModule {
                             state.setPlaying(e.getItem().getType());
                             Schedulers.sync().runLater(() -> {
                                 if (!e.isCancelled()) {
-                                    ((BlockInventoryHolder) dispenser).getInventory().addItem(record);
+                                    HashMap<Integer, ItemStack> returned = ((BlockInventoryHolder) block.getState()).getInventory().addItem(record);
+                                    for (ItemStack value : returned.values()) {
+                                        block.getWorld().dropItem(block.getLocation(), value);
+                                    }
                                 }
                             }, 1);
                         }
-                        
+
                         state.update();
                         delete.add(relative); // possible dupe?
                     }
