@@ -19,6 +19,7 @@ public class NotePlugin extends ExtendedJavaPlugin {
 
         this.hologramModule = bindModule(new HologramModule());
         bindModule(new DropperModule(this));
+        bindModule(new DoubleDoorModule());
     }
 
     @Override

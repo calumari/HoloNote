@@ -3,7 +3,6 @@ package net.socialhangover.note;
 import com.google.common.collect.ImmutableList;
 import lombok.RequiredArgsConstructor;
 import me.lucko.helper.Events;
-import me.lucko.helper.Schedulers;
 import me.lucko.helper.event.filter.EventFilters;
 import me.lucko.helper.terminable.TerminableConsumer;
 import me.lucko.helper.terminable.module.TerminableModule;
@@ -65,14 +64,11 @@ public class DropperModule implements TerminableModule {
                         } else {
                             final ItemStack record = new ItemStack(state.getRecord());
                             state.setPlaying(e.getItem().getType());
-                            Schedulers.sync().runLater(() -> {
-                                if (!e.isCancelled()) {
-                                    HashMap<Integer, ItemStack> returned = ((BlockInventoryHolder) block.getState()).getInventory().addItem(record);
-                                    for (ItemStack value : returned.values()) {
-                                        block.getWorld().dropItem(block.getLocation(), value);
-                                    }
-                                }
-                            }, 1);
+
+                            HashMap<Integer, ItemStack> returned = ((BlockInventoryHolder) block.getState()).getInventory().addItem(record);
+                            for (ItemStack value : returned.values()) {
+                                block.getWorld().dropItem(block.getLocation(), value);
+                            }
                         }
 
                         state.update();
