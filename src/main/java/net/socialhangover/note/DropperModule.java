@@ -1,7 +1,9 @@
 package net.socialhangover.note;
 
 import com.google.common.collect.ImmutableList;
+import lombok.RequiredArgsConstructor;
 import me.lucko.helper.Events;
+import me.lucko.helper.Schedulers;
 import me.lucko.helper.event.filter.EventFilters;
 import me.lucko.helper.terminable.TerminableConsumer;
 import me.lucko.helper.terminable.module.TerminableModule;
@@ -9,14 +11,18 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Jukebox;
 import org.bukkit.block.data.type.Dispenser;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.BlockDispenseEvent;
 import org.bukkit.event.entity.ItemSpawnEvent;
+import org.bukkit.inventory.BlockInventoryHolder;
+import org.bukkit.inventory.ItemStack;
 
 import javax.annotation.Nonnull;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+@RequiredArgsConstructor
 public class DropperModule implements TerminableModule {
 
     private static final List<Material> MUSIC_DISCS = ImmutableList.<Material>builder()
@@ -33,11 +39,14 @@ public class DropperModule implements TerminableModule {
             .add(Material.MUSIC_DISC_WAIT)
             .add(Material.MUSIC_DISC_WARD)
             .build();
+
     private static final Set<Block> delete = new HashSet<>();
+
+    private final NotePlugin plugin;
 
     @Override
     public void setup(@Nonnull TerminableConsumer consumer) {
-        Events.subscribe(BlockDispenseEvent.class)
+        Events.subscribe(BlockDispenseEvent.class, EventPriority.HIGHEST)
                 .filter(EventFilters.ignoreCancelled())
                 .filter(e -> e.getBlock().getType() == Material.DROPPER)
                 .filter(e -> MUSIC_DISCS.contains(e.getItem().getType()))
@@ -48,14 +57,24 @@ public class DropperModule implements TerminableModule {
 
                     if (relative.getType() == Material.JUKEBOX) {
                         Jukebox state = (Jukebox) relative.getState();
-                        state.eject();
-                        state.setPlaying(e.getItem().getType());
-                        state.update();
 
+                        if (plugin.getConfig().getBoolean("eject-record")) {
+                            state.eject();
+                            state.setPlaying(e.getItem().getType());
+                        } else {
+                            final ItemStack record = new ItemStack(state.getRecord());
+                            state.setPlaying(e.getItem().getType());
+                            Schedulers.sync().runLater(() -> {
+                                if (!e.isCancelled()) {
+                                    ((BlockInventoryHolder) dispenser).getInventory().addItem(record);
+                                }
+                            }, 1);
+                        }
+                        
+                        state.update();
                         delete.add(relative); // possible dupe?
                     }
                 }).bindWith(consumer);
-
 
         Events.subscribe(ItemSpawnEvent.class)
                 .filter(EventFilters.ignoreCancelled())

@@ -10,10 +10,12 @@ import org.bukkit.configuration.file.YamlConfiguration;
 })
 public class NotePlugin extends ExtendedJavaPlugin {
 
+    private YamlConfiguration config;
 
     private HologramModule hologramModule;
 
     protected void enable() {
+        this.config = loadConfig("config.yml");
 
         this.hologramModule = bindModule(new HologramModule());
         bindModule(new DropperModule(this));
