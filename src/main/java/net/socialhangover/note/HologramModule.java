@@ -16,14 +16,14 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 
 import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.ListIterator;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 public class HologramModule implements TerminableModule {
 
-    private static final List<ArmorStand> armorStands = new ArrayList<>();
+    private static final Set<ArmorStand> armorStands = new HashSet<>();
 
     @Override
     public void setup(@Nonnull TerminableConsumer consumer) {
@@ -36,15 +36,13 @@ public class HologramModule implements TerminableModule {
                     NoteBlock noteBlock = (NoteBlock) block.getBlockData();
                     Note note = noteBlock.getNote();
                     Location loc = block.getLocation().clone().add(0.5D, 1.0D, 0.5D);
-                    ArmorStand as = this.spawn(loc, note.getId() + " " + note.getTone()
-                            .name() + (note.isSharped() ? "#" : ""));
+                    ArmorStand as = spawn(loc, note.getId() + " " + note.getTone().name() + (note.isSharped() ? "#" : ""));
                     armorStands.add(as);
                 }, 1L))
                 .bindWith(consumer);
 
         Schedulers.sync().runRepeating(() -> {
-            ListIterator<ArmorStand> it = armorStands.listIterator();
-            while (it.hasNext()) {
+            for (Iterator<ArmorStand> it = armorStands.iterator(); it.hasNext(); ) {
                 ArmorStand as = it.next();
                 if (as.getTicksLived() > 100) {
                     as.remove();
@@ -60,7 +58,7 @@ public class HologramModule implements TerminableModule {
         }
     }
 
-    private ArmorStand spawn(Location loc, String line) {
+    private static ArmorStand spawn(Location loc, String line) {
         ArmorStand as = null;
         for (Entity e : loc.getWorld().getNearbyEntities(loc, 1.0D, 1.0D, 1.0D)) {
             if (e.getType() == EntityType.ARMOR_STAND && loc.equals(e.getLocation())) {
