@@ -6,6 +6,7 @@ import me.lucko.helper.event.filter.EventFilters;
 import me.lucko.helper.terminable.TerminableConsumer;
 import me.lucko.helper.terminable.module.TerminableModule;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.Note;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.type.NoteBlock;
@@ -13,17 +14,18 @@ import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 
 import javax.annotation.Nonnull;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Set;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class HologramModule implements TerminableModule {
 
-    private static final Set<ArmorStand> armorStands = new HashSet<>();
+    private static final Map<Block, ArmorStand> holograms = new HashMap<>();
 
     @Override
     public void setup(@Nonnull TerminableConsumer consumer) {
@@ -37,13 +39,20 @@ public class HologramModule implements TerminableModule {
                     Note note = noteBlock.getNote();
                     Location loc = block.getLocation().clone().add(0.5D, 1.0D, 0.5D);
                     ArmorStand as = spawn(loc, note.getId() + " " + note.getTone().name() + (note.isSharped() ? "#" : ""));
-                    armorStands.add(as);
+                    holograms.put(block, as);
                 }, 1L))
                 .bindWith(consumer);
 
+        Events.subscribe(BlockBreakEvent.class)
+                .filter(EventFilters.ignoreCancelled())
+                .filter(e -> holograms.containsKey(e.getBlock()))
+                .handler(e -> {
+                    holograms.remove(e.getBlock()).remove();
+                }).bindWith(consumer);
+
         Schedulers.sync().runRepeating(() -> {
-            for (Iterator<ArmorStand> it = armorStands.iterator(); it.hasNext(); ) {
-                ArmorStand as = it.next();
+            for (Iterator<Map.Entry<Block, ArmorStand>> it = holograms.entrySet().iterator(); it.hasNext(); ) {
+                ArmorStand as = it.next().getValue();
                 if (as.getTicksLived() > 100) {
                     as.remove();
                     it.remove();
@@ -53,9 +62,10 @@ public class HologramModule implements TerminableModule {
     }
 
     public void disable() {
-        for (ArmorStand as : armorStands) {
+        for (ArmorStand as : holograms.values()) {
             as.remove();
         }
+        holograms.clear();
     }
 
     private static ArmorStand spawn(Location loc, String line) {
