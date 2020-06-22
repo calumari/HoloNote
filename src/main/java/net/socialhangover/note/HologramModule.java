@@ -32,7 +32,7 @@ public class HologramModule implements TerminableModule {
         Events.subscribe(PlayerInteractEvent.class)
                 .filter(EventFilters.ignoreCancelled())
                 .filter(e -> e.getAction() == Action.RIGHT_CLICK_BLOCK)
-                .filter(e -> e.getClickedBlock().getBlockData() instanceof NoteBlock)
+                .filter(e -> e.getClickedBlock().getType() == Material.NOTE_BLOCK)
                 .handler(e -> Schedulers.sync().runLater(() -> {
                     Block block = e.getClickedBlock();
                     NoteBlock noteBlock = (NoteBlock) block.getBlockData();
